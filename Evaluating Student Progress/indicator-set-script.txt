@@ -1,0 +1,384 @@
+# Initially set working directory by going to File -> Change Directory -> "choose path"
+# Install package for subset function
+install.packages("LearnBayes")
+
+# Reading the input csv file "indicator-research-set" into a indicator_set data frame
+indicator_set <- data.frame(read.csv("indicator-research-set.csv"))
+
+# Sorting the data frame by student code
+attach(indicator_set)
+indicator_set <- indicator_set[order(studycode, assignment, CRN),]
+
+# Creating a new column of the row numbers
+indicator_set$rownumber <- as.numeric(rownames(indicator_set))
+
+# Progress indicator - Increasing Statement Coverage
+IncreasingStmtCov <- function(){
+
+# Checking for non zeroes in statesments.nontest
+	check<-indicator_set$statements.nontest != '0'
+	for(t in check){
+		if(t != TRUE) continue
+
+# Creating a new column IncrStmtCov
+		indicator_set$IncrStmtCov <- indicator_set$statementsCovered.nontest/indicator_set$statements.nontest
+
+# Looping through every distinct CRN value
+		for(i in unique(CRN)){
+
+# Creating a subset of CRN column
+			CRN_set <- subset(indicator_set, CRN == i)
+
+# Looping through every distinct studycode value
+			for(j in unique(CRN_set$studycode)){
+
+# Creating a subset of studycode column
+				StudyCode_set <- subset(CRN_set, studycode == j)
+
+# Looping through every distinct assignment value
+				for(k in unique(StudyCode_set$assignment)){
+
+# Creating a subset of assignment column
+					assignment_set <- subset(StudyCode_set, assignment == k)
+					for(m in seq(from=1, to=length(assignment_set$IncrStmtCov), by=1)){
+
+# Computing the maximum value for the first four column values
+					if(m <= 4){
+						indicator_set[assignment_set[m,c("rownumber")],c("IncrStmtCov.max4")] <- max(indicator_set$IncrStmtCov[0:m])
+					}
+		
+# Computing the maximum of previous four values
+					else{
+						indicator_set[assignment_set[m,c("rownumber")],c("IncrStmtCov.max4")] <- max(indicator_set$IncrStmtCov[m-4:m])
+					}
+					}
+		
+				}
+			}		
+		}
+
+		indicator_set$IncrStmtCov.diff <- indicator_set$IncrStmtCov.max4 - indicator_set$IncrStmtCov
+
+# Computing the bool value of IncrStmtCov
+		indicator_set$IncrStmtCov.bool <- indicator_set$IncrStmtCov.diff > 0
+	}
+}
+
+# Progress indicator - Increasing Statement Coverage
+IncreasingMethodsCov <- function(){
+# Checking for non zero values in methods.nontest column
+	check1<-indicator_set$methods.nontest != '0'
+	for(s in check1){
+		if(s != TRUE) continue
+		indicator_set$IncrMthdCov <- indicator_set$methodsCovered.nontest/indicator_set$methods.nontest
+
+		for(i in unique(CRN)){
+			CRN_set <- subset(indicator_set, CRN == i)
+			for(j in unique(CRN_set$studycode)){
+				StudyCode_set <- subset(CRN_set, studycode == j)
+				for(k in unique(StudyCode_set$assignment)){
+					assignment_set <- subset(StudyCode_set, assignment == k)
+					for(m in seq(from=1, to=length(assignment_set$IncrMthdCov), by=1)){
+
+# computing the maximum of first four values in InCrMthdCov column
+					if(m <= 4){
+						indicator_set[assignment_set[m,c("rownumber")],c("IncrMthdCov.max4")] <- max(indicator_set$IncrMthdCov[0:m])
+					}
+
+# computing the maximum of previous four values in InCrMthdCov column		
+					else{
+						indicator_set[assignment_set[m,c("rownumber")],c("IncrMthdCov.max4")] <- max(indicator_set$IncrMthdCov[m-4:m])
+					}
+					}
+		
+				}
+			}		
+		}
+		indicator_set$IncrMthdCov.diff <- indicator_set$IncrMthdCov.max4 - indicator_set$IncrMthdCov
+# Computing the bool value of IncrMthdCov
+		indicator_set$IncrMthdCov.bool <- indicator_set$IncrMthdCov.diff > 0
+	}
+}
+
+# Progress indicator - Increasing Conditionals Coverage
+IncreasingCondCov <- function(){
+# checking for non-zero values
+	check2<-indicator_set$conditionals.nontest != '0'
+	for(r in check){
+		if(r != TRUE) continue
+		indicator_set$IncrCondCov <- indicator_set$conditionalsCovered.nontest/indicator_set$conditionals.nontest
+
+		for(i in unique(CRN)){
+			CRN_set <- subset(indicator_set, CRN == i)
+			for(j in unique(CRN_set$studycode)){
+				StudyCode_set <- subset(CRN_set, studycode == j)
+				for(k in unique(StudyCode_set$assignment)){
+					assignment_set <- subset(StudyCode_set, assignment == k)
+					for(m in seq(from=1, to=length(assignment_set$IncrCondCov), by=1)){
+# Computing the maximum of first four values in IncrCondCov column
+					if(m <= 4){
+						indicator_set[assignment_set[m,c("rownumber")],c("IncrCondCov.max4")] <- max(indicator_set$IncrCondCov[0:m])
+					}
+		
+# Computing the maximum of previous four values in IncrCondCov column
+					else{
+						indicator_set[assignment_set[m,c("rownumber")],c("IncrCondCov.max4")] <- max(indicator_set$IncrCondCov[m-4:m])
+					}
+					}
+		
+				}
+			}		
+		}
+		indicator_set$IncrCondCov.diff <- indicator_set$IncrCondCov.max4 - indicator_set$IncrCondCov
+# Calculating the bool value of IncrCondCov column
+		indicator_set$IncrCondCov.bool <- indicator_set$IncrCondCov.diff > 0
+	}
+}
+
+
+# Progress indicator - Increasing Composite Coverage
+IncreasingCompCov <- function(){
+#checking for non-zero values
+check3<-(indicator_set$statements.nontest + indicator_set$methods.nontest + indicator_set$conditionals.nontest != '0'
+	for(w in check3){
+		if(t != TRUE) continue
+		indicator_set$IncrCompCov <- (indicator_set$statementsCovered.nontest + indicator_set$methodsCovered.nontest + indicator_set$conditionalsCovered.nontest)/(indicator_set$statements.nontest + indicator_set$methods.nontest + indicator_set$conditionals.nontest)
+
+		for(i in unique(CRN)){
+			CRN_set <- subset(indicator_set, CRN == i)
+			for(j in unique(CRN_set$studycode)){
+				StudyCode_set <- subset(CRN_set, studycode == j)
+				for(k in unique(StudyCode_set$assignment)){
+					assignment_set <- subset(StudyCode_set, assignment == k)
+					for(m in seq(from=1, to=length(assignment_set$IncrCompCov), by=1)){
+# Computing for maximum of first sour values in IncrCompCov column
+					if(m <= 4){
+						indicator_set[assignment_set[m,c("rownumber")],c("IncrCompCov.max4")] <- max(indicator_set$IncrCompCov[0:m])
+					}
+# Computing the maximum of previous fur values in IncrCompCov column 		
+					else{
+						indicator_set[assignment_set[m,c("rownumber")],c("IncrCompCov.max4")] <- max(indicator_set$IncrCompCov[m-4:m])
+					}
+					}
+		
+				}
+			}		
+		}
+		indicator_set$IncrCompCov.diff <- indicator_set$IncrCompCov.max4 - indicator_set$IncrCompCov
+# Calculating the bool value of IncrCompCov column
+		indicator_set$IncrCompCov.bool <- indicator_set$IncrCompCov.diff > 0
+	}
+}
+
+
+# Progress indicator - Adding New Solution to Methods
+AddNewSolMthds <- function(){
+# checking for non-zero values
+	check3<-indicator_set$conditionals.nontest != '0'
+	for(u in check){
+		if(u != TRUE) continue
+		indicator_set$AddNewSolMthds <- indicator_set$methods.nontest
+
+		for(i in unique(CRN)){
+			CRN_set <- subset(indicator_set, CRN == i)
+			for(j in unique(CRN_set$studycode)){
+				StudyCode_set <- subset(CRN_set, studycode == j)
+				for(k in unique(StudyCode_set$assignment)){
+					assignment_set <- subset(StudyCode_set, assignment == k)
+					for(m in seq(from=1, to=length(assignment_set$AddNewSolMthds), by=1)){
+# Computing the maximum of first four values in AddNewSolMthds
+					if(m <= 4){
+						indicator_set[assignment_set[m,c("rownumber")],c("AddNewSolMthds.max4")] <- max(indicator_set$AddNewSolMthds[0:m])
+					}
+# Computing the maximum of previous four values in AddNewSolMthds		
+					else{
+						indicator_set[assignment_set[m,c("rownumber")],c("AddNewSolMthds.max4")] <- max(indicator_set$AddNewSolMthds[m-4:m])
+					}
+					}
+		
+				}
+			}		
+		}
+		indicator_set$AddNewSolMthds.diff <- indicator_set$AddNewSolMthds.max4 - indicator_set$AddNewSolMthds
+# Calculating the bool value of AddNewSolMthds column
+		indicator_set$AddNewSolMthds.bool <- indicator_set$AddNewSolMthds.diff > 0
+	}
+}
+
+# Progress indicator - Adding New Tests to Methods
+AddNewTstMthds <- function(){
+	
+		for(i in unique(CRN)){
+			CRN_set <- subset(indicator_set, CRN == i)
+			for(j in unique(CRN_set$studycode)){
+				StudyCode_set <- subset(CRN_set, studycode == j)
+				for(k in unique(StudyCode_set$assignment)){
+					assignment_set <- subset(StudyCode_set, assignment == k)
+					for(m in seq(from=1, to=length(assignment_set$AddNewTstMthds), by=1)){
+# Computing the maximum of first four values in AddNewTstMthds column
+					if(m <= 4){
+# Checking if there is increase in methods.test column, and there is no increase in methods.nontest column
+						if((max(assignment_set$methods.test[0:m] == assignment_set$methods.test[m])) && (max(assignment_set$methods.nontest[0:m] != assignment_set$methods.nontest[m])){
+# Computing the bool value for AddNewTstMthds
+	assignment_set$AddNewTstMthds.bool <- 1
+	}
+	else{
+	assignment_set$$AddNewTstMthds.bool <- 0
+	}
+					}
+# Computing the maximum of first four values in AddNewTstMthds column
+					else{
+						if((max(assignment_set$methods.test[m-4:m] == assignment_set$methods.test[m])) && (max(assignment_set$methods.nontest[m-4:m] != assignment_set$methods.nontest[m])){
+	indicator_set$AddNewTstMthds.bool <- 1
+	}
+	else{
+	indicator_set$AddNewTstMthds.bool <- 0
+	}
+					}
+					}
+		
+				}
+			}		
+		}
+
+# Progress indicator - Adding Existing Methods
+AddExstMthds <- function(){
+	
+		for(i in unique(CRN)){
+			CRN_set <- subset(indicator_set, CRN == i)
+			for(j in unique(CRN_set$studycode)){
+				StudyCode_set <- subset(CRN_set, studycode == j)
+				for(k in unique(StudyCode_set$assignment)){
+					assignment_set <- subset(StudyCode_set, assignment == k)
+					for(m in seq(from=1, to=length(assignment_set$AddExstMthds), by=1)){
+#Computing the maximum of the first four values in AddExstMthds column
+					if(m <= 4){
+						if((max(assignment_set$ncloc.test[0:m] == assignment_set$ncloc.test[m])) && (max(assignment_set$ncloc.nontest[0:m] != assignment_set$ncloc.nontest[m])){
+	assignment_set$AddNewTstMthds.bool <- 1
+	}
+	else{
+	assignment_set$$AddNewTstMthds.bool <- 0
+	}
+					}
+#Computing the maximum the of previous four values in AddExstMthds column		
+					else{
+						if((max(assignment_set$ncloc.test[m-4:m] == assignment_set$ncloc.test[m])) && (max(assignment_set$ncloc.nontest[m-4:m] != assignment_set$ncloc.nontest[m])){
+	indicator_set$AddNewTstMthds.bool <- 1
+	}
+	else{
+	indicator_set$AddNewTstMthds.bool <- 0
+	}
+					}
+					}
+		
+				}
+			}		
+		}
+
+# Progress indicator - Increasing number of tests per Coverage
+IncreasingNumOfTstsMthd <- function() {
+# checking for non-zero values
+	check4 <- indicator_set$methods.nontest != '0'
+	for(g in check4){
+		if(r != TRUE) continue
+		indicator_set$IncrNumTstsMthd <- indicator_set$methods.test/indicator_set$methods.nontest
+
+		for(i in unique(CRN)){
+			CRN_set <- subset(indicator_set, CRN == i)
+			for(j in unique(CRN_set$studycode)){
+				StudyCode_set <- subset(CRN_set, studycode == j)
+				for(k in unique(StudyCode_set$assignment)){
+					assignment_set <- subset(StudyCode_set, assignment == k)
+					for(m in seq(from=1, to=length(assignment_set$IncrNumTstsMthd), by=1)){
+#Computing the maximum of the first four values in IncrNumTstsMthd column		
+					if(m <= 4){
+						indicator_set[assignment_set[m,c("rownumber")],c("IncrNumTstsMthd.max4")] <- max(indicator_set$IncrNumTstsMthd[0:m])
+					}
+#Computing the maximum of the previous four values in IncrNumTstsMthd column				
+					else{
+						indicator_set[assignment_set[m,c("rownumber")],c("IncrNumTstsMthd.max4")] <- max(indicator_set$IncrNumTstsMthd[m-4:m])
+					}
+					}
+		
+				}
+			}		
+		}
+		indicator_set$IncrNumTstsMthd.diff <- indicator_set$IncrNumTstsMthd.max4 - indicator_set$IncrNumTstsMthd
+# Calculating the bool value for IncrNumTstsMthd column
+		indicator_set$IncrNumTstsMthd.bool <- indicator_set$IncrNumTstsMthd.diff > 0
+	}
+}
+
+
+# Progress indicator - Removing Static Analysis Errors
+RemvngStaticAnlsysErrs <- function() {
+	
+		for(i in unique(CRN)){
+			CRN_set <- subset(indicator_set, CRN == i)
+			for(j in unique(CRN_set$studycode)){
+				StudyCode_set <- subset(CRN_set, studycode == j)
+				for(k in unique(StudyCode_set$assignment)){
+					assignment_set <- subset(StudyCode_set, assignment == k)
+					for(m in seq(from=1, to=length(assignment_set$RemSttAnlsysErrs), by=1)){
+# Computing the maximum of the first four values in RemSttAnlsysErrs column		
+					if(m <= 4){
+# Checking for increases in score.tools column
+						if((max(assignment_set$score.tools[0:m] == assignment_set$score.tools[m])) && (max(assignment_set$score.tools[0:m] != assignment_set$score.tools[m])){
+	assignment_set$AddNewTstMthds.bool <- 1
+	}
+	else{
+	assignment_set$$AddNewTstMthds.bool <- 0
+	}
+					}
+#Computing the maximum of previous four values in RemSttAnlsysErrs column				
+					else{
+						if((max(assignment_set$score.tools[m-4:m] == assignment_set$score.tools[m])) && (max(assignment_set$score.tools[m-4:m] != assignment_set$score.tools[m])){
+	indicator_set$RemSttAnlsysErrs.bool <- 1
+	}
+	else{
+	indicator_set$RemSttAnlsysErrs <- 0
+	}
+					}
+					}
+		
+				}
+			}		
+		}
+
+
+# Progress indicator - Increasing Correctness
+IncreasingCorrectness <- function() {
+# checking for non-zero values
+	check5 <- (indicator_set$elements && indicator_set$elementsCovered) != '0'
+	for(f in check5)
+	{
+	if(f != TRUE) continue
+	indicator_set$IncrCrctnss <- indicator_set$score.correctness/(indicator_set$elementsCovered / indicator_set$elements)
+		for(i in unique(CRN)){
+			CRN_set <- subset(indicator_set, CRN == i)
+			for(j in unique(CRN_set$studycode)){
+				StudyCode_set <- subset(CRN_set, studycode == j)
+				for(k in unique(StudyCode_set$assignment)){
+					assignment_set <- subset(StudyCode_set, assignment == k)
+					for(m in seq(from=1, to=length(assignment_set$IncrCrctnss), by=1)){
+#Computing the maximum of the previous four values in IncrCrctnss column		
+					if(m <= 4){
+						indicator_set[assignment_set[m,c("rownumber")],c("IncrCrctnss.max4")] <- max(indicator_set$IncrCrctnss[0:m])
+					}
+#Computing the maximum of the previous four values in IncrCrctnss column				
+					else{
+						indicator_set[assignment_set[m,c("rownumber")],c("IncrCrctnss.max4")] <- max(indicator_set$IncrCrctnss[m-4:m])
+					}
+					}
+		
+				}
+			}		
+		}
+		indicator_set$IncrCrctnss.diff <- indicator_set$IncrCrctnss.max4 - indicator_set$IncrCrctnss
+# Calculating the bool value for IncrCrctnss column
+		indicator_set$IncrCrctnss.bool <- indicator_set$IncrCrctnss.diff > 0
+	}
+}
+
+# Writing the result to output csv file "indicator-set-results"
+write.csv(indicator_set, file = "indicator-set-results.csv")

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  
+<style type="text/css">
+
+body {
+   font-family: Arial, Helvetica, sans-serif;
+}
+
+.footer {
+    color: #888888;
+    font-size: 13px;
+    text-align: right;
+}
+
+#states path {
+  fill: #ccc;
+  stroke: #fff;
+}
+
+div.tooltip {	
+    position: absolute;			
+    text-align: left-side;			
+    width: 200px;					
+    height: 120px;					
+    padding: 2px;				
+    font: 12px sans-serif;		
+    background: lightsteelblue;	
+    border: 2px;		
+    border-radius: 8px;			
+    pointer-events: none;			
+}
+        
+button {
+	-moz-box-shadow:inset 0px 1px 0px 0px #f9eca0;
+	-webkit-box-shadow:inset 0px 1px 0px 0px #f9eca0;
+	box-shadow:inset 0px 1px 0px 0px #f9eca0;
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#f0c911', endColorstr='#f2ab1e',GradientType=0);
+	-moz-border-radius:6px;
+	-webkit-border-radius:6px;
+	border-radius:6px;
+	border:1px solid black;
+	display:inline-block;
+	cursor:pointer;
+	color:black;
+	font-family:Arial;
+	font-size:15px;
+	font-weight:bold;
+	padding:6px 24px;
+	text-decoration:none;
+    width:80%
+}
+
+</style>
+
+<script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
+<script src="https://code.jquery.com/ui/1.10.4/jquery-ui.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css" />
+<script src="http://d3js.org/d3.v2.js"></script>
+<script>
+function changeImage(selectedHue){
+
+if (selectedHue == "unemployment") {
+        document.getElementById("imgClickAndChange").src = "unemploymentimage.png"; }
+if (selectedHue == "inflation") {
+        document.getElementById("imgClickAndChange").src = "inflationimage.png"; }
+if (selectedHue == "gdppercapita") {
+        document.getElementById("imgClickAndChange").src = "gdppercapitaimage.png"; }
+if (selectedHue == "population") {
+        document.getElementById("imgClickAndChange").src = "populationimage.png"; }
+        
+}
+
+</script>
+
+<script type="text/javascript">
+
+
+function drawEverything(selectedButton) {
+
+document.getElementById("graph").innerHTML = "";
+
+
+var w = 1000;
+var h = 700;
+var buttonClicked;
+
+//defulted to GDP/Capita 
+var color1="violet";
+var color2="indigo";
+var selectedParameter = "normalgdppercapita";
+var displaySelectedParameter="GDP/Capita ";
+var selectedRank="gdppercapitarank";
+var selectedOriginalName = "gdppercapita";
+
+if(selectedButton == "unemployment")
+{
+    color1="lightgreen";
+    color2="darkgreen";
+    selectedParameter="normalunemployment";
+    displaySelectedParameter="Unemployment Rate ";
+    selectedRank="unemploymentrank";
+    selectedOriginalName = selectedButton;
+
+
+}
+if(selectedButton == "population")
+{
+    color1="lightblue";
+    color2="darkblue";
+    selectedParameter="normalpopulation";
+    displaySelectedParameter="Population  ";
+    selectedRank="populationrank";
+    selectedOriginalName = selectedButton;
+
+
+}
+if(selectedButton == "gdppercapita")
+{
+    color1="violet";
+    color2="indigo";
+    selectedParameter="normalgdppercapita";
+    displaySelectedParameter="GDP/Capita "; 
+    selectedRank="gdppercapita";
+    selectedOriginalName = selectedButton;
+
+}
+if(selectedButton == "inflation")   
+{
+    color1="pink";
+    color2="darkred";
+    selectedParameter="normalinflation";
+    displaySelectedParameter="Inflation Rate ";
+    selectedRank="inflationrank";
+    selectedOriginalName = selectedButton;
+
+}
+
+var xy = d3.geo.equirectangular()
+          .scale(22).translate([450,600]);
+
+var path = d3.geo.path()
+    .projection(xy);
+
+var svg = d3.select("#graph").insert("svg:svg")
+	.attr("width", w)
+        .attr("height", h);
+    
+var states = svg.append("svg:g")
+    .attr("id", "states");
+
+var circles = svg.append("svg:g")   
+    .attr("id", "circles");
+
+var labels = svg.append("svg:g")
+    .attr("id", "labels");
+    
+var scalefactor=1./1000. ;
+var longscalefactor = 25;
+var latscalefactor = 10;
+
+var maxRefugee = 10000; 
+var minRefugee = 10;
+var minRadius = 1;
+var maxRadius = 5;
+var radiusScale = d3.scale.linear().domain([minRefugee,maxRefugee])
+                .range([minRadius,maxRadius]);
+                
+var minParameterData = 0;
+var maxParameterData = 100;
+var colorScale = d3.scale.linear().domain([minParameterData,maxParameterData])
+                .range([color1,color2]);
+             
+// Define the div for the tooltip
+var div = d3.select("body").append("div")	
+    .attr("class", "tooltip")				
+    .style("opacity", 0);
+
+var projectMap = function(collection) {
+  states.selectAll("path")
+      .data(collection.features)
+    .enter().append("svg:path")
+      .attr("d", path)
+            .on("mouseover", function(d) {
+                d3.select(this).style("fill","grey")
+                    .append("svg:title")
+                    .text(d.properties.name);})
+            .on("mouseout", function(d) {
+                d3.select(this).style("fill","#ccc");})
+}
+
+var projectCSVData = function(csv) {
+  circles.selectAll("circle")
+      .data(csv)
+    .enter()
+    .append("svg:circle")
+      .attr("fill",function(d) { return colorScale(d[selectedParameter]); })
+      .attr("cx", function(d) { return (d["latitude"]); })
+      .attr("cy", function(d) { return (d["longitude"]); })
+      .attr("r",  function(d) { return (d["reflog"]*(2)); })
+      .attr("title",  function(d) { return d["country"]+": "+Math.round(d["refugees"]); })
+      .on("mouseover", function(d) {		
+            div.transition()		
+                .duration(1000)		
+                .style("opacity", 1.9);		
+            div	.html(
+            "<h3>"+
+            "<strong>"+
+            "Country: "+d["country"]+"<br/>"+
+            "Number of Refugees: "+d["refugees"]+"<br/>"+
+            "Refugee Rank: "+d["refugeerank"]+"<br/>"+
+            displaySelectedParameter+d[selectedOriginalName]+"<br/>"+
+            displaySelectedParameter+" Rank: "+d[selectedRank]+
+            "</strong>"+
+            "</h3>"
+            )	
+                .style("left", (d3.event.pageX) + "px")		
+                .style("top", (d3.event.pageY - 28) + "px");	
+            })					
+        .on("mouseout", function(d) {		
+            div.transition()		
+                .duration(500)		
+                .style("opacity", 0);});
+  
+  labels.selectAll("labels")
+      .data(csv)
+    .enter()
+    .append("svg:text")
+        .attr("x", function(d) { return (d["latitude"]); })
+        .attr("y", function(d) { return (d["longitude"]); })
+        .attr("dy", "0.3em")
+        .attr("text-anchor", "middle")
+        .text(function(d) { return d["countrycode"]; });
+
+}
+
+d3.json("european-union.geo.json", projectMap);
+
+d3.csv("gdpref.csv", projectCSVData);
+
+}
+
+//$(document).ready(drawEverything);
+    
+</script>
+</head>
+
+<body bgcolor="beige" onload="drawEverything('default')" >
+<h2>	
+European Union Asylum Applicants
+</h2>
+<h5>
+This map shows the 28 EU countries, with circles showing the number of asylum applicants for each country. <br> Click on the different variables to see which correlate to the number of refugees. Hover over the countries for additional information 
+</h5>
+<table width="1600">
+<tr>
+
+<td>
+	<h4> Number of Asylum Applicants </h4>
+    <img alt="" src="refugeesimage.png" 
+            style="height: 70px; width: 260px"/>
+    <br>
+    <br>
+            
+    <img alt="" src="gdppercapitaimage.png" 
+            style="height: 70px; width: 260px" id="imgClickAndChange"/>
+<br>
+<br>
+<div class="buttondiv" float="right" id="buttondiv"> 
+    <button type="button" style="background-color:green" 
+        onClick="drawEverything('unemployment'); changeImage('unemployment')" >Unemployment Rate</button>
+    <br>
+    <br>
+    <button type="button" style="background-color:tomato" 
+        onClick="drawEverything('inflation'); changeImage('inflation') ">Inflation</button>
+    <br>
+    <br>
+    <button type="button" style="background-color:lightblue" 
+        onClick="drawEverything('population'); changeImage('population') " >Population</button>
+    <br>
+    <br>
+    <button type="button" style="background-color:orchid" 
+        onClick="drawEverything('gdppercapita'); changeImage('gdppercapita')" >GDP/Capita</button>
+   
+</div>    
+</td>
+
+<td>
+<div id="graph"></div>
+</td>
+</tr>
+
+</table>
+</body>
+</html>

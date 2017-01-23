@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+  <script>
+$(document).ready(function(){
+    $('[data-toggle="tooltip"]').tooltip();   
+	legendPopulate();
+	
+});
+
+
+</script>
+
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+div.tooltip {	
+    position: absolute;			
+    text-align: center;			
+    width: 100px;					
+    height: 50px;					
+    padding: 2px;				
+    font: 12px sans-serif;		
+    background: white;	
+    border: 0px;		
+    border-radius: 13px;			
+    pointer-events: none;
+}
+div.fade
+{
+    width: 400px;					
+    height: 40px;					
+    padding: 2px;	
+}
+	
+div.starone {
+    color:black;
+	margin:-2px;     
+}
+
+div.startwo {
+    color:black;
+	margin:-32px;     
+	
+}
+div.starthree {
+    color:black;
+	margin:-32px;     
+	
+}
+div.starfour {
+    color:black;
+	margin:-32px;     
+	
+}
+div.starfive {
+    color:black;
+	margin:-32px;     
+	
+}
+div.starsix {
+    color:black;
+	margin:-32px;     
+	
+}
+div.starseven {
+    color:black;
+	margin:-32px;     
+	
+}
+p.starone {
+	margin-left: 2.75cm;
+	}
+p.startwo {
+	margin-left: 4.75cm;
+	}
+p.starthree {
+	margin-left: 10.55cm;
+	}
+p.starfour {
+	margin-left: 18.85cm;
+	}
+p.starfive {
+	margin-left: 20.55cm;
+	}
+p.starsix {
+	margin-left: 21.60cm;
+	}
+p.starseven {
+	margin-left: 27.65cm;
+	}
+</style>
+
+
+<body bgcolor="beige">
+<div align="center">
+<h2>Timeline of Refugees Fleeing from Syria</h2>
+<p><h5>This visualization shows the effect of the Syrian refugee crisis on the five countries which have absorbed the majority of Syrian refugees: Turkey, Lebanon, Iraw, Jordan and Egypt.<br> Hover over the stars below the timeline to show key events during the war </h5></p>
+</div>
+
+<script src="//d3js.org/d3.v3.min.js"></script>
+<!--<script src="http://d3js.org/colorbrewer.v1.min.js"></script>
+<script src="legend.js"></script>-->
+
+<script>
+
+
+  
+  function appendTootltip(obj,pro)
+  {
+       
+       d3.select(obj)
+      .classed("hover", true)
+      .attr("stroke", strokecolor)
+      .attr("stroke-width", "1px")
+	  .on("mousemove", function(d) {
+	    div.transition()
+			   .duration(200)
+			   .style("opacity",0.9);
+		div.html("Name: " + d.key + "<br>" + "No: " + pro)
+			   .style("visibility", "visible")
+			   .style("left", (d3.event.pageX) + "px")
+			   .style("top", (d3.event.pageY) + "px");
+		})
+  }
+  
+  var datearray = [];
+strokecolor = "#045A8D";
+var format = d3.time.format("%m/%d/%y");
+var names=[];
+names.push("Egypt","Iraq","Jordan","Lebanon","Turkey");
+//var margin = {top: 20, right: 30, bottom: 30, left: 40},
+//    width = 960 - margin.left - margin.right,
+//    height = 500 - margin.top - margin.bottom;
+var margin = {top: 10, right: 40, bottom: 55, left: 60};
+
+var width = 1000;
+var height = 600 - margin.top - margin.bottom;
+
+var div = d3.select("body").append("div")	
+    .attr("class", "tooltip")				
+    .style("opacity", 0);  
+
+var x = d3.time.scale()
+    .range([0, width]);
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+//var z = d3.scale.category10();
+
+
+var z=[];
+z.push("#581ECC","#44D61A","#18B1F7","#FF9500","#CC2500");
+
+function legendPopulate()
+  {
+    var legendSVG = d3.select("#svgDiv").append("td").append("table");//.append("svg").attr("id","legendSVG").attr("width",300).attr("height",100);;
+    for(i=0;i<z.length;i++)
+	{      
+	  var g=legendSVG.append("tr").append("svg").attr("id","legendSVGRow").attr("width",300).attr("height",20);
+	  g.append("rect").attr("width",15).attr("height",15).attr("fill",z[i]);
+	  g.append("text").attr("dx",20).attr("dy",12).attr("style", "font-size:13px").text(names[i]);
+	  
+	 }
+  }
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom")
+    .ticks(d3.time.months)
+	.tickFormat(d3.time.format("%Y-%b"));
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+  //  .orient("left");
+  
+var stack = d3.layout.stack()
+    .offset("zero")
+    .values(function(d) { return d.values; })
+    .x(function(d) { return d.date; })
+    .y(function(d) { return d.value; });
+
+var nest = d3.nest()
+    .key(function(d) { return d.key; });
+
+var area = d3.svg.area()
+    .interpolate("cardinal")
+    .x(function(d) { return x(d.date); })
+    .y0(function(d) { return y(d.y0); })
+    .y1(function(d) { return y(d.y0 + d.y); });
+
+var svg = d3.select("body").append("table").append("tr").attr("id","svgDiv").append("td").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+d3.csv("data.csv", function(error, data) {
+  if (error) throw error;
+
+  data.forEach(function(d) {
+    d.date = d3.time.format('%m/%d/%Y').parse(d.date);
+	//console.log(d.date);
+    d.value = +d.value;
+  });
+
+  var layers = stack(nest.entries(data));
+  x.domain(d3.extent(data, function(d) { return d.date; }));
+  y.domain([0, d3.max(data, function(d) { return d.y0 + d.y; })]);
+
+  svg.selectAll(".layer")
+      .data(layers)
+    .enter().append("path")
+      .attr("class", "layer")
+      .attr("d", function(d) { return area(d.values); })
+      .style("fill", function(d, i) { return z[i]; });
+
+ // svg.append("g")
+ //     .attr("class", "x axis")
+ //     .attr("transform", "translate(0," + height + ")")
+ //     .call(xAxis);
+
+  //svg.append("g")
+  //    .attr("class", "y axis")
+  //    .call(yAxis);
+  
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+      .selectAll("text")	
+         .style("text-anchor", "end")
+         .attr("dx", "-.8em")
+         .attr("dy", ".15em")
+         .attr("transform", function(d) {
+                return "rotate(-65)" 
+                })
+	// div.html(<p> + "Deaths estimated at 10,000. A ceasefire attempted by the Arab League and the United Nations fails to create peace." + </p>);
+  svg.append("g")
+      .attr("class", "y axis")
+      .attr("transform", "translate(" + width + ", 0)");
+      //.call(yAxis.orient("right"));
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis.orient("left"));
+
+  svg.selectAll(".layer")
+    .attr("opacity", 1)
+    .on("mouseover", function(d, i) {
+      svg.selectAll(".layer").transition()
+      .duration(250)
+      .attr("opacity", function(d, j) {
+        return j != i ? 0.6 : 1;
+    })});
+
+   d3.selectAll(".layer").on("mouseover", function(d, i) {
+	  console.log("mousemove")
+      mousex = d3.mouse(this);
+      mousex = mousex[0];
+	 
+	  
+      var selected = (d.values);
+      for (var k = 0; k < selected.length; k++) {
+        
+		datearray[k] = k;
+		
+      }
+      
+      mousedate = datearray.indexOf(Math.floor(mousex*46/1000));
+	 
+      pro = d.values[mousedate].value;
+
+	 appendTootltip(this,pro)
+ 
+    })
+    .on("mouseout", function(d, i) {
+     svg.selectAll(".layer")
+      .transition()
+      .duration(25)
+      .attr("opacity", "1");
+      d3.select(this)
+      .classed("hover", false)
+      .attr("stroke-width", "0px"), div.html("Name: " + d.key + "<br>" + "No: " + pro).style("visibility", "hidden"); 
+  });
+   
+  var vertical = d3.select("body")
+        .append("div")
+        .attr("class", "remove")
+        .style("position", "absolute")
+        .style("z-index", "18")
+        .style("width", "1px")
+        .style("height", "700x")
+        .style("top", "92px")
+        .style("bottom", "-40px")
+        .style("left", "0px")
+        .style("background", "white");
+
+  d3.select("body")
+      .on("mousemove", function(){  
+         mousex = d3.mouse(this);
+         mousex = mousex[0] + 5;
+         vertical.style("left", mousex + "px" )})
+      .on("mouseover", function(){  
+         mousex = d3.mouse(this);
+         mousex = mousex[0] + 5;
+         vertical.style("left", mousex + "px")});
+});
+
+
+</script>
+<div class = "starone">
+		<p class = "starone"> <img src="gold-star.jpg" style="width:20px;height:22px;" data-toggle="tooltip" data-placement="right" title="Deaths estimated at 10,000. A ceasefire attempted by the Arab League and the United Nations fails to create peace"></p>
+</div>
+<div class = "startwo">
+		<p class = "startwo"> <img src="gold-star.jpg" style="width:20px;height:22px;" data-toggle="tooltip" data-placement="right" title="The UN officially declares the conflict a civil war"></p>
+</div>
+<div class = "startwo">
+		<p class = "starthree"> <img src="gold-star.jpg" style="width:20px;height:22px;" data-toggle="tooltip" data-placement="right" title="The group Islamic State of Iraq, which was expanding into Syria, changed its name to Islamic State of Iraq and Syria, or ISIS. Over the course of the year ISIS made  rapid gains through Northern Syria and Iraq"></p>
+</div>
+<div class = "startwo">
+		<p class = "starfour"> <img src="gold-star.jpg" style="width:20px;height:22px;" data-toggle="tooltip" data-placement="right" title="The Syrian Army uses Sarin gas on August 21st on military and civilian targets near Damascus, causing international outrage. Facing the possibility of a significant US intervention, the Syrian government agreed to give up its stockpiles of chemical weapons to the Organization for the Prohibition of Chemical weapons over the next year"></p>
+</div>
+<div class = "startwo">
+		<p class = "starfive"> <img src="gold-star.jpg" style="width:20px;height:22px;" data-toggle="tooltip" data-placement="right" title="ISIS takes control of Mosul in northern Iraq, the country's third largest city at roughly 2.5 million inhabitants before ISIS contol. This causes a massive flood of Iraqi refugees"></p>
+</div>
+<div class = "startwo">
+		<p class = "starsix"> <img src="gold-star.jpg" style="width:20px;height:22px;" data-toggle="tooltip" data-placement="right" title="Intense fighting around the Kurdish city of Kobani in northern Syria, with the Kurdish forces heavily supported by US air strikes"></p>
+</div>
+<div class = "startwo">
+		<p class = "starseven"> <img src="gold-star.jpg" style="width:20px;height:22px;" data-toggle="tooltip" data-placement="right" title="Russia begins bombing to support the al-Assad regime in Syria"></p>
+</div>
+<br><br><br><br><br><br><br><br><br><br><br>
+
